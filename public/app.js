@@ -870,7 +870,7 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
         return iconColorOrder[colorIndex % 12].toString();
     }
 
-    function drawEntityIcon(model, x, y, len, height, lineWidthMult, angle, alpha, colorIndex, upgradeKey, hover = false) {
+    function drawEntityIcon(model, x, y, len, height, lineWidthMult, angle, alpha, colorIndex, upgradeKey, treeScale = 1, hover = false) {
         let picture = (typeof model == "object") ? model : util.getEntityImageFromMockup(model, gui.color),
             position = picture.position,
             scale = (0.6 * len) / position.axis,
@@ -905,7 +905,9 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
         drawEntity(baseColor, entityX, entityY, picture, 1, 1, scale / picture.size, lineWidthMult, angle, true);
 
         // Tank name
-        drawText(picture.upgradeName ?? picture.name, x + (upgradeKey ? 0.9 * len : len) / 2, y + height * 0.94, height / 10, color.guiwhite, "center");
+        if (treeScale > 0.5) {
+			drawText(picture.upgradeName ?? picture.name, x + (upgradeKey ? 0.9 * len : len) / 2, y + height * 0.94, height / 10, color.guiwhite, "center");
+		}
 
         // Upgrade key
         if (upgradeKey) {
@@ -1307,7 +1309,7 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
             let ax = (x - global.scrollX) * (tileSize + spaceBetween) * global.treeScale + global.screenWidth / 2,
                 ay = (y - global.scrollY) * (tileSize + spaceBetween) * global.treeScale + global.screenHeight / 2;
             if (ax < -tileSize || ax > global.screenWidth + tileSize || ay < -tileSize || ay > global.screenHeight + tileSize) continue;
-            drawEntityIcon(index.toString(), ax, ay, tileSize * global.treeScale, tileSize * global.treeScale, global.treeScale, angle, 1, colorIndex);
+            drawEntityIcon(index.toString(), ax, ay, tileSize * global.treeScale, tileSize * global.treeScale, global.treeScale, angle, 1, colorIndex, null, global.treeScale);
         }
 
         let text = "Arrow keys to navigate the class tree. Shift to navigate faster. Scroll wheel (or +/- keys) to zoom in/out.";
@@ -1656,7 +1658,7 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
                 global.clickables.upgrade.place(i, x * clickableRatio, y * clickableRatio, len * clickableRatio, height * clickableRatio);
                 let upgradeKey = getClassUpgradeKey(upgradeNum);
 
-                drawEntityIcon(model, x, y, len, height, 1, upgradeSpin, 0.6, colorIndex++, upgradeKey, upgradeNum == upgradeHoverIndex);
+                drawEntityIcon(model, x, y, len, height, 1, upgradeSpin, 0.6, colorIndex++, upgradeKey, 1, upgradeNum == upgradeHoverIndex);
 
                 ticker++;
                 upgradeNum++;
