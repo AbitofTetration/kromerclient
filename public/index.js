@@ -14,7 +14,7 @@ let fs = require('fs'),
     },
     server,
     port = 3000,
-    host = "kaguya-arras-2.netlify.app",
+    host = "localhost",
     // If someone tries to get a file that does not exist, send them this instead.
     DEFAULT_FILE = "index.html",
     update_servers = async () => {
