@@ -553,43 +553,30 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
         ctx.stroke();
     }
     // Sub-drawing functions
-    const drawPolyImgs = [];
-    function drawPoly(context, centerX, centerY, radius, sides, angle = 0, borderless, fill, imageInterpolation) {
-        // Start drawing
-        context.beginPath();
-        if (sides instanceof Array) {
-            let dx = Math.cos(angle);
-            let dy = Math.sin(angle);
-            for (let [x, y] of sides)
-                context.lineTo(
-                    centerX + radius * (x * dx - y * dy),
-                    centerY + radius * (y * dx + x * dy)
-                );
-        } else {
-            if ("string" === typeof sides) {
-                //ideally we'd preload images when mockups are loaded but im too lazy for that atm
-                if (!drawPolyImgs[sides]) {
-                    drawPolyImgs[sides] = new Image();
-                    drawPolyImgs[sides].src = sides;
-                    drawPolyImgs[sides].isBroken = false;
-                    drawPolyImgs[sides].onerror = function() {
-                        this.isBroken = true;
-                    };
+const drawPolyImgs = [];
+ function drawPoly(context, centerX, centerY, radius, sides, angle = 0, borderless, fill, imageInterpolation) {
+    // Start drawing
+    context.beginPath();
+    if (sides instanceof Array) {
+        let dx = Math.cos(angle);
+        let dy = Math.sin(angle);
+        for (let [x, y] of sides)
+            context.lineTo(
+                centerX + radius * (x * dx - y * dy),
+                centerY + radius * (y * dx + x * dy)
+            );
+    } else {
+        if ("string" === typeof sides) {
+            //ideally we'd preload images when mockups are loaded but im too lazy for that atm
+            if (sides.startsWith('/') | sides.startsWith('./') | sides.startsWith('http')) {
+                drawPolyImgs[sides] = new Image();
+                drawPolyImgs[sides].src = sides;
+                drawPolyImgs[sides].isBroken = false;
+                drawPolyImgs[sides].onerror = function() {
+                    this.isBroken = true;
                 }
+
                 let img = drawPolyImgs[sides];
-                if (img.isBroken || !img.complete) { // check if img is broken and draw as path2d if so
-                    let path = new Path2D(sides);
-                    context.save();
-                    context.translate(centerX, centerY);
-                    context.scale(radius, radius);
-                    context.lineWidth /= radius;
-                    context.rotate(angle);
-                    context.lineWidth *= fill ? 1 : 0.5; // Maintain constant border width
-                    if (!borderless) context.stroke(path);
-                    if (fill) context.fill(path);
-                    context.restore();
-                    return;
-                }
                 context.translate(centerX, centerY);
                 context.rotate(angle);
                 context.imageSmoothingEnabled = imageInterpolation;
@@ -599,62 +586,74 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
                 context.translate(-centerX, -centerY);
                 return;
             }
-            angle += sides % 2 ? 0 : Math.PI / sides;
-        }
-        if (!sides) {
-            // Circle
-            let fillcolor = context.fillStyle;
-            let strokecolor = context.strokeStyle;
-            context.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-            context.fillStyle = strokecolor;
+            let path = new Path2D(sides);
+            context.save();
+            context.translate(centerX, centerY);
+            context.scale(radius, radius);
+            context.lineWidth /= radius;
+            context.rotate(angle);
             context.lineWidth *= fill ? 1 : 0.5; // Maintain constant border width
-            if (!borderless) context.stroke();
-            context.closePath();
-            context.beginPath();
-            context.fillStyle = fillcolor;
-            context.arc(centerX, centerY, radius * fill, 0, 2 * Math.PI);
-            if (fill) context.fill();
-            context.closePath();
+            if (!borderless) context.stroke(path);
+            if (fill) context.fill(path);
+            context.restore();
             return;
-        } else if (sides < 0) {
-            // Star
-            if (settings.graphical.pointy) context.lineJoin = "miter";
-            sides = -sides;
-            angle += (sides % 1) * Math.PI * 2;
-            sides = Math.floor(sides);
-            let dip = 1 - 6 / (sides ** 2);
-            context.moveTo(centerX + radius * Math.cos(angle), centerY + radius * Math.sin(angle));
-            context.lineWidth *= fill ? 1 : 0.5; // Maintain constant border width
-            for (let i = 0; i < sides; i++) {
-                let htheta = ((i + 0.5) / sides) * 2 * Math.PI + angle,
-                    theta = ((i + 1) / sides) * 2 * Math.PI + angle,
-                    cx = centerX + radius * dip * Math.cos(htheta),
-                    cy = centerY + radius * dip * Math.sin(htheta),
-                    px = centerX + radius * Math.cos(theta),
-                    py = centerY + radius * Math.sin(theta);
-                /*if (curvyTraps) {
-                    context.quadraticCurveTo(cx, cy, px, py);
-                } else {
-                    context.lineTo(cx, cy);
-                    context.lineTo(px, py);
-                }*/
-                context.quadraticCurveTo(cx, cy, px, py);
-            }
-        } else if (sides > 0) {
-            // Polygon
-            angle += (sides % 1) * Math.PI * 2;
-            sides = Math.floor(sides);
-            context.lineWidth *= fill ? 1 : 0.5; // Maintain constant border width
-            for (let i = 0; i < sides; i++) {
-                let theta = (i / sides) * 2 * Math.PI + angle;
-                context.lineTo(centerX + radius * Math.cos(theta), centerY + radius * Math.sin(theta));
-            }
         }
-        context.closePath();
-        if (!borderless) context.stroke();
-        if (fill) context.fill();
-        context.lineJoin = "round";
+        angle += sides % 2 ? 0 : Math.PI / sides;
     }
+    if (!sides) {
+        // Circle
+        let fillcolor = context.fillStyle;
+        let strokecolor = context.strokeStyle;
+        context.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        context.fillStyle = strokecolor;
+        context.lineWidth *= fill ? 1 : 0.5; // Maintain constant border width
+        if (!borderless) context.stroke();
+        context.closePath();
+        context.beginPath();
+        context.fillStyle = fillcolor;
+        context.arc(centerX, centerY, radius * fill, 0, 2 * Math.PI);
+        if (fill) context.fill();
+        context.closePath();
+        return;
+    } else if (sides < 0) {
+        // Star
+        if (settings.graphical.pointy) context.lineJoin = "miter";
+        sides = -sides;
+        angle += (sides % 1) * Math.PI * 2;
+        sides = Math.floor(sides);
+        let dip = 1 - 6 / (sides ** 2);
+        context.moveTo(centerX + radius * Math.cos(angle), centerY + radius * Math.sin(angle));
+        context.lineWidth *= fill ? 1 : 0.5; // Maintain constant border width
+        for (let i = 0; i < sides; i++) {
+            let htheta = ((i + 0.5) / sides) * 2 * Math.PI + angle,
+                theta = ((i + 1) / sides) * 2 * Math.PI + angle,
+                cx = centerX + radius * dip * Math.cos(htheta),
+                cy = centerY + radius * dip * Math.sin(htheta),
+                px = centerX + radius * Math.cos(theta),
+                py = centerY + radius * Math.sin(theta);
+            /*if (curvyTraps) {
+                context.quadraticCurveTo(cx, cy, px, py);
+            } else {
+                context.lineTo(cx, cy);
+                context.lineTo(px, py);
+            }*/
+            context.quadraticCurveTo(cx, cy, px, py);
+        }
+    } else if (sides > 0) {
+        // Polygon
+        angle += (sides % 1) * Math.PI * 2;
+        sides = Math.floor(sides);
+        context.lineWidth *= fill ? 1 : 0.5; // Maintain constant border width
+        for (let i = 0; i < sides; i++) {
+            let theta = (i / sides) * 2 * Math.PI + angle;
+            context.lineTo(centerX + radius * Math.cos(theta), centerY + radius * Math.sin(theta));
+        }
+    }
+    context.closePath();
+    if (!borderless) context.stroke();
+    if (fill) context.fill();
+    context.lineJoin = "round";
+}
     function drawTrapezoid(context, x, y, length, height, aspect, angle, borderless, fill, alpha, strokeWidth, position) {
         let h = [];
         h = aspect > 0 ? [height * aspect, height] : [height, -height * aspect];
@@ -870,7 +869,7 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
         return iconColorOrder[colorIndex % 12].toString();
     }
 
-    function drawEntityIcon(model, x, y, len, height, lineWidthMult, angle, alpha, colorIndex, upgradeKey, treeScale = 1, hover = false) {
+    function drawEntityIcon(model, x, y, len, height, lineWidthMult, angle, alpha, colorIndex, upgradeKey, hover = false) {
         let picture = (typeof model == "object") ? model : util.getEntityImageFromMockup(model, gui.color),
             position = picture.position,
             scale = (0.6 * len) / position.axis,
@@ -905,9 +904,7 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
         drawEntity(baseColor, entityX, entityY, picture, 1, 1, scale / picture.size, lineWidthMult, angle, true);
 
         // Tank name
-        if (treeScale > 0.5) {
-			drawText(picture.upgradeName ?? picture.name, x + (upgradeKey ? 0.9 * len : len) / 2, y + height * 0.94, height / 10, color.guiwhite, "center");
-		}
+        drawText(picture.upgradeName ?? picture.name, x + (upgradeKey ? 0.9 * len : len) / 2, y + height * 0.94, height / 10, color.guiwhite, "center");
 
         // Upgrade key
         if (upgradeKey) {
@@ -1309,7 +1306,7 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
             let ax = (x - global.scrollX) * (tileSize + spaceBetween) * global.treeScale + global.screenWidth / 2,
                 ay = (y - global.scrollY) * (tileSize + spaceBetween) * global.treeScale + global.screenHeight / 2;
             if (ax < -tileSize || ax > global.screenWidth + tileSize || ay < -tileSize || ay > global.screenHeight + tileSize) continue;
-            drawEntityIcon(index.toString(), ax, ay, tileSize * global.treeScale, tileSize * global.treeScale, global.treeScale, angle, 1, colorIndex, null, global.treeScale);
+            drawEntityIcon(index.toString(), ax, ay, tileSize * global.treeScale, tileSize * global.treeScale, global.treeScale, angle, 1, colorIndex);
         }
 
         let text = "Arrow keys to navigate the class tree. Shift to navigate faster. Scroll wheel (or +/- keys) to zoom in/out.";
@@ -1583,7 +1580,7 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
             drawBar(x, x + len, y + height / 2, height - 3 + settings.graphical.barChunk, color.black);
             drawBar(x, x + len, y + height / 2, height - 3, color.grey);
             let shift = Math.min(1, entry.score / max);
-            drawBar(x, x + len * shift, y + height / 2, height - 3.5, global.FFA && entry.id == gui.playerid ? color.blue : gameDraw.modifyColor(entry.barColor));
+            drawBar(x, x + len * shift, y + height / 2, height - 3.5, gameDraw.modifyColor(entry.barColor));
             // Leadboard name + score
             let nameColor = entry.nameColor || "#FFFFFF";
             drawText(entry.label + (": " + util.handleLargeNumber(Math.round(entry.score))), x + len / 2, y + height / 2, height - 5, nameColor, "center", true);
@@ -1602,7 +1599,7 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
         // Draw upgrade menu
         if (gui.upgrades.length > 0) {
             let internalSpacing = 15;
-            let len = alcoveSize / 3;
+            let len = alcoveSize / 2.5;
             let height = len;
 
             // Animation processing
@@ -1658,7 +1655,7 @@ import { socketInit, gui, leaderboard, minimap, moveCompensation, lag, getNow } 
                 global.clickables.upgrade.place(i, x * clickableRatio, y * clickableRatio, len * clickableRatio, height * clickableRatio);
                 let upgradeKey = getClassUpgradeKey(upgradeNum);
 
-                drawEntityIcon(model, x, y, len, height, 1, upgradeSpin, 0.6, colorIndex++, upgradeKey, 1, upgradeNum == upgradeHoverIndex);
+                drawEntityIcon(model, x, y, len, height, 1, upgradeSpin, 0.6, colorIndex++, upgradeKey, upgradeNum == upgradeHoverIndex);
 
                 ticker++;
                 upgradeNum++;
