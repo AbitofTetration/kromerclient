@@ -13,8 +13,8 @@ let fs = require('fs'),
         "ico": "image/x-icon"
     },
     server,
-    port = 3000,
-    host = "localhost",
+    port = process.env.PORT || 3000,
+    host = "0.0.0.0",
     // If someone tries to get a file that does not exist, send them this instead.
     DEFAULT_FILE = "index.html",
     update_servers = async () => {
